@@ -90,19 +90,3 @@ Configuration files are located in the `config/` directory. Modify these files t
 ## API Documentation
 
 The system provides a RESTful API for accessing health metrics and alerts. API documentation is available when the service is running.
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Submit a pull request
-
-## License
-
-[Add your license information here]
-
-## Support
-
-For support and questions, please [create an issue](link-to-issues) or contact the development team.
