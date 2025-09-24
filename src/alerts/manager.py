@@ -80,7 +80,7 @@ class AlertManager:
         """Start the alert manager"""
         self.running = True
 
-        # Initialize default rules
+        # Initialize default rules 
         self._setup_default_rules()
         logger.info("Alert manager started")
 
