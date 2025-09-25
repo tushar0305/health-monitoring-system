@@ -69,7 +69,7 @@ class AlertManager:
 
     def add_rule(self, rule: AlertRule):
         """Add an alert rule"""
-        self.rule.append(rule)
+        self.rules.append(rule)
         logger.info(f"Added alert rule: {rule.name}")
 
     def add_notification_handler(self, handler: Callable):

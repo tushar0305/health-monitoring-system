@@ -20,13 +20,13 @@ echo -e "\n2. Component Registration:"
 curl -s -X POST http://localhost:8000/components/register \
   -H "Content-Type: application/json" \
   -d '{"component_id":"demo-service","name":"Demo Service","health_endpoint":"http://localhost:8001/health"}' \
-  | python -m json.tool
+  | python3 -m json.tool
 
 echo -e "\n3. Alert Status:"
-curl -s http://localhost:8000/alerts | python -m json.tool
+curl -s http://localhost:8000/alerts | python3 -m json.tool
 
 echo -e "\n4. System Metrics:"
-curl -s http://localhost:8000/health/metrics | python -m json.tool | head -30
+curl -s http://localhost:8000/health/metrics | python3 -m json.tool | head -30
 
 echo -e "\n✅ Demo completed successfully!"
 echo "🌐 Open http://localhost:8000/dashboard to see the live dashboard"

@@ -41,9 +41,9 @@ class SystemMetrics:
 class HealthCollector:
     def __init__(self, config):
         self.config = config
-        self.registered_components = Dict[str, Dict] = {}
-        self.component_health = Dict[str, ComponentHealth] = {}
-        self.system_metrics = List[SystemMetrics] = []
+        self.registered_components: Dict[str, Dict] = {}
+        self.component_health: Dict[str, ComponentHealth] = {}
+        self.system_metrics: List[SystemMetrics] = []
         self.session: Optional[aiohttp.ClientSession] = None
         self.running = False
 
@@ -57,16 +57,16 @@ class HealthCollector:
 
         # Start collection tasks
         await asyncio.gather(
-            self._collect_system_metric(),
+            self._collect_system_metrics(),
             self._collect_component_health(),
-            return_exception = True
+            return_exceptions=True
         )
 
     async def stop(self):
         """Stop the health collection service"""
         self.running = False
         if self.session:
-            await self.session.Close()
+            await self.session.close()
 
     def register_component(self, component_id: str, name: str, 
                           health_endpoint: str, metadata: Dict = None):
@@ -80,7 +80,7 @@ class HealthCollector:
         } 
         logger.info(f"Registered Component: {name} ({component_id})")
 
-    async def _collect_system_metric(self):
+    async def _collect_system_metrics(self):
          """Collect system-level metrics continuously"""
          while self.running:
             try:
@@ -231,7 +231,7 @@ class HealthCollector:
         system_metrics_dict = None
         if latest_metrics:
             system_metrics_dict = asdict(latest_metrics)
-             # Convert datetime to ISO string for JSON serialization
+            # Convert datetime to ISO string for JSON serialization
             if 'timestamp' in system_metrics_dict and system_metrics_dict['timestamp']:
                 system_metrics_dict['timestamp'] = system_metrics_dict['timestamp'].isoformat()
         
@@ -239,7 +239,7 @@ class HealthCollector:
         components_dict = {}
         for comp_id, comp in self.component_health.items():
             comp_dict = asdict(comp)
-             # Convert datetime to ISO string for JSON serialization
+            # Convert datetime to ISO string for JSON serialization
             if 'last_check' in comp_dict and comp_dict['last_check']:
                 comp_dict['last_check'] = comp_dict['last_check'].isoformat()
             # Convert HealthStatus enum to string for JSON serialization
@@ -248,7 +248,7 @@ class HealthCollector:
             components_dict[comp_id] = comp_dict
         
         return {
-             "overall_status": self.get_overall_health_status().value,
+            "overall_status": self.get_overall_health_status().value,
             "timestamp": datetime.now().isoformat(),
             "system_metrics": system_metrics_dict,
             "components": components_dict,
