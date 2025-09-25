@@ -312,8 +312,23 @@ class AlertManager:
             if a.severity == AlertSeverity.CRITICAL
         ])
         
+        def convert_alert_to_dict(alert):
+            """Convert alert to dictionary with proper enum serialization"""
+            alert_dict = asdict(alert)
+            # Convert enums to strings for JSON serialization
+            alert_dict['severity'] = alert.severity.value
+            alert_dict['status'] = alert.status.value
+            # Convert datetime objects to ISO strings
+            if alert_dict.get('created_at'):
+                alert_dict['created_at'] = alert.created_at.isoformat()
+            if alert_dict.get('acknowledged_at'):
+                alert_dict['acknowledged_at'] = alert.acknowledged_at.isoformat()
+            if alert_dict.get('resolved_at'):
+                alert_dict['resolved_at'] = alert.resolved_at.isoformat()
+            return alert_dict
+        
         recent_alerts = [
-            asdict(alert) for alert in self.alert_history[-10:]
+            convert_alert_to_dict(alert) for alert in self.alert_history[-10:]
         ]
         
         return {
@@ -325,7 +340,7 @@ class AlertManager:
             ]),
             "recent_alerts": recent_alerts,
             "active_alert_list": [
-                asdict(alert) for alert in self.active_alerts.values()
+                convert_alert_to_dict(alert) for alert in self.active_alerts.values()
             ]
         }
 
