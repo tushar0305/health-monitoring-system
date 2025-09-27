@@ -4,7 +4,7 @@ from sqlalchemy.orm import session, sessionmaker
 from contextlib import asynccontextmanager
 import logging
 
-from ..database.models import Base
+from database.models import Base
 from config.config import settings
 
 logger = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ class DatabaseManager:
                 max_overflow=settings.database_max_overflow
             )
 
-            # Session Factory
+            # Create session factory
             self.session_factory = sessionmaker(
                 self.engine, class_=AsyncSession, expire_on_commit=False
             )
@@ -48,14 +48,16 @@ class DatabaseManager:
 
     @asynccontextmanager
     async def get_session(self):
-        try:
-            yield session
-            await session.commit()
-        except Exception:
-            await session.rollback()
-            raise
-        finally:
-            await session.close()
+        """Get database session"""
+        async with self.session_factory() as session:
+            try:
+                yield session
+                await session.commit()
+            except Exception:
+                await session.rollback()
+                raise
+            finally:
+                await session.close()
 
 #Global database manager instance
 db_manager = DatabaseManager()

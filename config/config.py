@@ -15,20 +15,18 @@ class Settings(BaseSettings):
     
     # Database Settings
     database_url: str = "sqlite:///./health_monitoring.db"
-    databasr_pool_size: int = 20
+    database_pool_size: int = 20
     database_max_overflow: int = 20
 
-    #Data Retention Settings
-    metric_retention_days: int = 30
+    # Data Retention Settings
+    metrics_retention_days: int = 30
     component_health_retention_days: int = 7
-    alert_retention_days: int = 30
+    alert_retention_days: int = 90
     archive_batch_size: int = 1000
     cleanup_interval_hours: int = 24
-
     
     # Health Check Settings
     health_check_interval: int = 30  # seconds
-    metric_retention_days: int = 30
     alert_check_interval: int = 60   # seconds
     
     # Component Registration

@@ -34,8 +34,8 @@ class ComponentHealth(Base):
     status = Column(String(50), nullable=False)
     response_time = Column(Float, nullable=False)
     timestamp = Column(DateTime, nullable=False, index=True)
-    metadata = Column(Text, nullable=True)  # JSON string
-    metrics = Column(Text, nullable=True)   # JSON string
+    component_metadata = Column(Text, nullable=True)  # JSON string
+    component_metrics = Column(Text, nullable=True)   # JSON string
     created_at = Column(DateTime, default=func.now())
 
 class Alert(Base):
@@ -55,7 +55,7 @@ class Alert(Base):
     created_at = Column(DateTime, nullable=False, index=True)
     acknowledged_at = Column(DateTime, nullable=True)
     resolved_at = Column(DateTime, nullable=True)
-    metadata = Column(Text, nullable=True)  # JSON string
+    alert_metadata = Column(Text, nullable=True)  # JSON string
 
 class DataRetentionLog(Base):
     """Track data retention operations"""

@@ -12,23 +12,30 @@ A comprehensive health monitoring system that tracks system metrics, generates a
 - Web dashboard with live monitoring
 - Component health monitoring
 - Alert management and acknowledgment
+- **Data retention and archiving system**
+- **Persistent database storage**
+- **Automated cleanup and archival**
+- **Memory management with configurable retention policies**
 
 ## Project Structure
 
 ```
 health-monitoring-system/
 ├── src/                    # Source code
-├── tests/                  # Test files
-├── frontend/               # Frontend application
-├── config/                 # Configuration files
-├── docker/                 # Docker configuration
-├── scripts/                # Utility scripts
-├── data/                   # Data storage (gitignored)
-├── requirements.txt        # Python dependencies
-├── start.sh               # Start all services
-├── stop.sh                # Stop all services
-├── test.sh                # Run tests
-└── demo.sh                # Demo script
+│   ├── api/               # FastAPI application
+│   ├── health/            # Health monitoring logic
+│   ├── alerts/            # Alert management
+│   ├── services/          # Background services
+│   └── utils/             # Utility functions
+├── database/              # Database models and connections
+├── config/                # Configuration files
+├── tests/                 # Test files
+├── frontend/              # Frontend application
+├── requirements.txt       # Python dependencies
+├── start.sh              # Start all services
+├── stop.sh               # Stop all services
+├── test.sh               # Run tests
+└── demo.sh               # Demo script
 ```
 
 ## Prerequisites
@@ -103,6 +110,8 @@ The system provides a RESTful API for accessing health metrics and alerts. API d
 - `POST /components/register` - Register a new component for monitoring
 - `GET /dashboard` - Web dashboard interface
 - `WS /ws` - WebSocket endpoint for real-time updates
+- `POST /admin/retention/cleanup` - Manual data retention cleanup
+- `GET /admin/retention/status` - Data retention status and policies
 
 ### WebSocket Events
 
@@ -146,6 +155,20 @@ The WebSocket endpoint broadcasts health updates every 5 seconds with the follow
 - Alert acknowledgment and resolution
 - Real-time alert broadcasting
 
+### Data Retention & Archiving
+- **Persistent database storage** - All metrics and alerts stored in SQLite database
+- **Configurable retention policies** - Customizable data retention periods
+- **Automated archiving** - Old data automatically archived and cleaned up
+- **Memory management** - Keeps only recent data in memory for performance
+- **Audit trail** - Complete log of all retention operations
+- **Manual cleanup** - On-demand data cleanup via API endpoints
+
+#### Retention Policies (Configurable)
+- **System Metrics**: 30 days (configurable)
+- **Component Health**: 7 days (configurable)
+- **Alerts**: 90 days (configurable)
+- **Cleanup Interval**: 24 hours (configurable)
+
 ## Troubleshooting
 
 ### Common Issues
@@ -160,6 +183,28 @@ The WebSocket endpoint broadcasts health updates every 5 seconds with the follow
 - Main API logs: `api.log`
 - Mock services logs: `mock_services.log`
 - Process IDs: `api.pid`, `mock.pid`
+- Database file: `health_monitoring.db`
+
+### Data Retention Management
+
+**Check retention status:**
+```bash
+curl http://localhost:8000/admin/retention/status
+```
+
+**Run manual cleanup:**
+```bash
+curl -X POST http://localhost:8000/admin/retention/cleanup
+```
+
+**View database:**
+```bash
+sqlite3 health_monitoring.db
+.tables
+SELECT COUNT(*) FROM system_metrics;
+SELECT COUNT(*) FROM component_health;
+SELECT COUNT(*) FROM alerts;
+```
 
 ## Development
 

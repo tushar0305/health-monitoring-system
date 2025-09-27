@@ -9,6 +9,9 @@ from dataclasses import dataclass, asdict
 from enum import Enum
 import logging
 
+from database.models import SystemMetric, ComponentHealth
+from database.connection import db_manager
+
 logger = logging.getLogger(__name__)
 
 class HealthStatus(Enum):
@@ -79,6 +82,45 @@ class HealthCollector:
             "failure_count": 0
         } 
         logger.info(f"Registered Component: {name} ({component_id})")
+    
+    async def save_metric_to_db(self, metric):
+        """Save metric to database"""
+        try:
+            async with db_manager.get_session() as session:
+                db_metric = SystemMetric(
+                    timestamp=metric.timestamp,
+                    cpu_percent=metric.cpu_percent,
+                    memory_percent=metric.memory_percent,
+                    disk_percent=metric.disk_percent,
+                    process_count=metric.process_count,
+                    load_average_1m=metric.load_average[0] if len(metric.load_average) > 0 else None,
+                    load_average_5m=metric.load_average[1] if len(metric.load_average) > 1 else None,
+                    load_average_15m=metric.load_average[2] if len(metric.load_average) > 2 else None,
+                    bytes_sent=metric.network_io.get("bytes_sent"),
+                    bytes_recv=metric.network_io.get("bytes_recv"),
+                    packets_sent=metric.network_io.get("packets_sent"),
+                    packets_recv=metric.network_io.get("packets_recv")
+                )
+                session.add(db_metric)
+        except Exception as e:
+            logger.error(f"Failed to save metric to database: {e}")
+
+    async def save_component_health_to_db(self, component_health):
+        """Save component health to database"""
+        try:
+            async with db_manager.get_session() as session:
+                db_health = ComponentHealth(
+                    component_id=component_health.component_id,
+                    component_name=component_health.name,
+                    status=component_health.status.value,
+                    response_time=component_health.response_time,
+                    timestamp=component_health.last_check,
+                    component_metadata=json.dumps(component_health.metadata) if component_health.metadata else None,
+                    component_metrics=json.dumps(component_health.metrics) if component_health.metrics else None
+                )
+                session.add(db_health)
+        except Exception as e:
+            logger.error(f"Failed to save component health to database: {e}")
 
     async def _collect_system_metrics(self):
          """Collect system-level metrics continuously"""
@@ -125,7 +167,10 @@ class HealthCollector:
 
                 self.system_metrics.append(metrics)
                 
-                # Keep only last 1000 metrics
+                # Save to database
+                await self.save_metric_to_db(metrics)
+                
+                # Keep only last 1000 metrics in memory
                 if len(self.system_metrics) > 1000:
                     self.system_metrics = self.system_metrics[-1000:]
 
@@ -168,7 +213,7 @@ class HealthCollector:
                     elif health_data.get("status") == "critical":
                         status = HealthStatus.CRITICAL
 
-                    self.component_health[component_id] = ComponentHealth(
+                    component_health = ComponentHealth(
                         component_id=component_id,
                         name=info["name"],
                         status=status,
@@ -177,6 +222,11 @@ class HealthCollector:
                         metadata=health_data.get("metadata", {}),
                         metrics=health_data.get("metrics", {})
                     )
+                    
+                    self.component_health[component_id] = component_health
+                    
+                    # Save to database
+                    await self.save_component_health_to_db(component_health)
 
                     # Reset failure count on success
                     info["failure_count"] = 0

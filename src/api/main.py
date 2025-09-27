@@ -11,6 +11,8 @@ from typing import Dict, List
 
 from ..health.collector import HealthCollector, HealthStatus
 from ..alerts.manager import AlertManager, Alert
+from database.connection import db_manager
+from src.services.retention_service import retention_service
 from config.config import settings
 
 # Configure logging
@@ -28,6 +30,9 @@ async def lifespan(app: FastAPI):
     
     # Startup
     logger.info("Starting Health Monitoring System...")
+    
+    # Initialize database
+    await db_manager.initialize()
     
     health_collector = HealthCollector(settings)
     alert_manager = AlertManager(settings)
@@ -53,6 +58,7 @@ async def lifespan(app: FastAPI):
     
     # Start services
     await alert_manager.start()
+    await retention_service.start()  # Start retention service
     
     # Start health collection in background
     asyncio.create_task(health_collector.start())
@@ -69,8 +75,10 @@ async def lifespan(app: FastAPI):
     
     # Shutdown
     logger.info("Shutting down Health Monitoring System...")
+    await retention_service.stop()  # Stop retention service
     await health_collector.stop()
     await alert_manager.stop()
+    await db_manager.close()  # Close database connection
 
 app = FastAPI(
     title="Health Monitoring System",
@@ -259,6 +267,61 @@ async def register_component(component_data: dict):
     )
     
     return {"status": "registered", "component_id": component_data["component_id"]}
+
+@app.post("/admin/retention/cleanup")
+async def manual_cleanup():
+    """Run manual data retention cleanup"""
+    try:
+        await retention_service.run_manual_cleanup()
+        return {"status": "success", "message": "Data retention cleanup completed"}
+    except Exception as e:
+        logger.error(f"Manual cleanup failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Cleanup failed: {str(e)}")
+
+@app.get("/admin/retention/status")
+async def retention_status():
+    """Get data retention status"""
+    if not db_manager:
+        raise HTTPException(status_code=503, detail="Database not initialized")
+    
+    try:
+        async with db_manager.get_session() as session:
+            from database.models import DataRetentionLog
+            
+            # Get recent retention operations
+            from sqlalchemy import select
+            recent_operations = await session.execute(
+                select(DataRetentionLog)
+                .order_by(DataRetentionLog.timestamp.desc())
+                .limit(10)
+            )
+            
+            operations = recent_operations.scalars().all()
+            
+            return {
+                "status": "active",
+                "retention_policies": {
+                    "metrics_retention_days": settings.metrics_retention_days,
+                    "component_health_retention_days": settings.component_health_retention_days,
+                    "alert_retention_days": settings.alert_retention_days,
+                    "cleanup_interval_hours": settings.cleanup_interval_hours
+                },
+                "recent_operations": [
+                    {
+                        "operation_type": op.operation_type,
+                        "table_name": op.table_name,
+                        "records_processed": op.records_processed,
+                        "records_archived": op.records_archived,
+                        "records_deleted": op.records_deleted,
+                        "execution_time": op.execution_time_seconds,
+                        "timestamp": op.timestamp.isoformat()
+                    }
+                    for op in operations
+                ]
+            }
+    except Exception as e:
+        logger.error(f"Failed to get retention status: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get status: {str(e)}")
 
 @app.get("/dashboard")
 async def dashboard():
