@@ -15,11 +15,16 @@ class Settings(BaseSettings):
     
     # Database Settings
     database_url: str = "sqlite:///./health_monitoring.db"
-    
-    # Redis Settings
-    redis_host: str = "localhost"
-    redis_port: int = 6379
-    redis_db: int = 0
+    databasr_pool_size: int = 20
+    database_max_overflow: int = 20
+
+    #Data Retention Settings
+    metric_retention_days: int = 30
+    component_health_retention_days: int = 7
+    alert_retention_days: int = 30
+    archive_batch_size: int = 1000
+    cleanup_interval_hours: int = 24
+
     
     # Health Check Settings
     health_check_interval: int = 30  # seconds
